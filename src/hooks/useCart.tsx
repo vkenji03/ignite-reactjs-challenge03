@@ -23,20 +23,50 @@ const CartContext = createContext<CartContextData>({} as CartContextData);
 
 export function CartProvider({ children }: CartProviderProps): JSX.Element {
   const [cart, setCart] = useState<Product[]>(() => {
-    // const storagedCart = Buscar dados do localStorage
+    const storagedCart = localStorage.getItem('@RocketShoes:cart');
 
-    // if (storagedCart) {
-    //   return JSON.parse(storagedCart);
-    // }
+    if (storagedCart) {
+      return JSON.parse(storagedCart);
+    }
 
     return [];
   });
 
   const addProduct = async (productId: number) => {
     try {
-      // TODO
+      const storagedCart = localStorage.getItem('@RocketShoes:cart');
+
+      if (storagedCart) {
+        const cart = JSON.parse(storagedCart);
+        let isUpdated = false;
+
+        const updatedCart = cart.map((product: Product) => {
+          if (product.id === productId) {
+            isUpdated = true;
+            return { ...product, amount: product.amount + 1 };
+          }
+          return product;
+        });
+
+        if (!isUpdated) {
+          const { data } = await api.get('/products/' + productId);
+          const newUpdatedCart = [ ...updatedCart, { ...data, amount: 1 } ];
+          localStorage.setItem('@RocketShoes:cart', JSON.stringify(newUpdatedCart));
+          setCart(newUpdatedCart);
+        } else {
+          localStorage.setItem('@RocketShoes:cart', JSON.stringify(updatedCart));
+          setCart(updatedCart);
+        }
+      } else { // nesse caso o localStorage ainda nao possui dados
+        const { data } = await api.get('/products/' + productId);
+        const productData = [{ ...data, amount: 1 }];
+
+        localStorage.setItem('@RocketShoes:cart', JSON.stringify(productData));
+        setCart(productData);
+      }
     } catch {
-      // TODO
+      // NAO SEI COMO TRATAR
+      console.error('Ocorreu um erro');
     }
   };
 

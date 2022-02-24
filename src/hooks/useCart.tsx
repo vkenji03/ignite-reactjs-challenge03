@@ -73,7 +73,6 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
         setCart(productData);
       }
     } catch {
-      // NAO SEI COMO TRATAR
       toast.error('Erro na adicao do produto');
     }
   };

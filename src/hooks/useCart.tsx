@@ -35,17 +35,25 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
   const addProduct = async (productId: number) => {
     try {
       const storagedCart = localStorage.getItem('@RocketShoes:cart');
-
+      
+      const { data } = await api.get('/stock/' + productId);
+      const maxAmount = data.amount;
+      
       if (storagedCart) {
         const cart = JSON.parse(storagedCart);
         let isUpdated = false;
-
+        
         const updatedCart = cart.map((product: Product) => {
-          if (product.id === productId) {
+          if (product.id === productId && product.amount + 1 <= maxAmount) {
             isUpdated = true;
             return { ...product, amount: product.amount + 1 };
+          } else if (product.id === productId){
+            isUpdated = true;
+            toast.error('Quantidade solicitada fora de estoque');
+            return product;
+          } else {
+            return product;
           }
-          return product;
         });
 
         if (!isUpdated) {
@@ -66,7 +74,7 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
       }
     } catch {
       // NAO SEI COMO TRATAR
-      console.error('Ocorreu um erro');
+      toast.error('Erro na adicao do produto');
     }
   };
 

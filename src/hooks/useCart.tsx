@@ -69,13 +69,16 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
 
   const removeProduct = (productId: number) => {
     try {
-      const storagedCart = localStorage.getItem('@RocketShoes:cart') as string;
-      const cart: Product[] = JSON.parse(storagedCart);
+      const updatedCart = [ ...cart ];
+      const productIndex = updatedCart.findIndex(product => product.id === productId);
 
-      const updatedCart = cart.filter(product => product.id !== productId);
-
-      localStorage.setItem('@RocketShoes:cart', JSON.stringify(updatedCart));
-      setCart(updatedCart);
+      if (productIndex >= 0) {
+        updatedCart.splice(productIndex, 1);
+        setCart(updatedCart);
+        localStorage.setItem('@RocketShoes:cart', JSON.stringify(updatedCart));
+      } else {
+        throw Error();
+      }
     } catch {
       toast.error('Erro na remoção do produto');
     }
@@ -86,19 +89,29 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
     amount,
   }: UpdateProductAmount) => {
     try {
-      const storagedCart = localStorage.getItem('@RocketShoes:cart') as string;
-      const cart = JSON.parse(storagedCart);
+      if (amount <= 0) {
+        return;
+      }
 
-      const updatedCart = cart.map((product: Product) => {
-        if (product.id === productId) {
-          return { ...product, amount: amount - 1 };
-        } else {
-          return product;
-        }
-      });
+      const stock = await api.get(`/stock/${[productId]}`);
 
-      localStorage.setItem('@RocketShoes:cart', JSON.stringify(updatedCart));
-      setCart(updatedCart);
+      const stockAmount = stock.data.amount;
+
+      if (amount > stockAmount) {
+        toast.error('Quantidade solicitada fora de estoque');
+        return;
+      }
+
+      const updatedCart = [ ...cart ];
+      const productExists = updatedCart.find(product => product.id === productId);
+
+      if (productExists) {
+        productExists.amount = amount;
+        setCart(updatedCart);
+        localStorage.setItem('@RocketShoes:cart', JSON.stringify(updatedCart));
+      } else {
+        throw Error();
+      }
     } catch {
       toast.error('Erro na alteração de quantidade do produto');
     }
